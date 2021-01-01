@@ -2,6 +2,7 @@ use::std::collections::HashMap;
 use::std::f64;
 
 pub fn search(table: &HashMap<String,HashMap<String, i32>>, query: &str) -> HashMap<String,f64>{
+    println!("Searching...");
     let query_vector: Vec<&str> = query.split(" ").collect();
     let mut doc_and_score: HashMap<String,f64> = HashMap::new();
     for key in table.keys(){

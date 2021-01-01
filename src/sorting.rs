@@ -1,6 +1,8 @@
 use::std::collections::HashMap;
 
+//TODO creating efficent sorting algorithm
 pub fn bubble_sort(result:&HashMap<std::string::String, f64>) -> Vec<String>{
+    println!("Sorting...");
     let mut docs: Vec<String> = Vec::new();
     for key in result.keys(){
         docs.push(key.to_string());

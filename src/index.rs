@@ -2,6 +2,7 @@ use::std::collections::HashMap;
 use::std::fs;
 
 pub fn create_index(path: &str) -> HashMap<String,HashMap<String, i32>>{
+    println!("Indexing...");
     //let doc_iterator = fs::read_dir("/Users/meruem/Documents/Coding/Rust/indexing/data").unwrap();
     let mut doc_list: Vec<String> = Vec::new();
     if let Ok(entries) = fs::read_dir(path) {
@@ -17,7 +18,7 @@ pub fn create_index(path: &str) -> HashMap<String,HashMap<String, i32>>{
     
     for doc in doc_list{
         let mut index: HashMap<String, i32> = HashMap::new();
-        let text: String = fs::read_to_string(format!("{}{}", "data/", doc)).expect("Error while reading file").replace("\n", " ");
+        let text: String = fs::read_to_string(format!("{}{}", path, doc)).expect("Error while reading file").replace("\n", " ");
         //let text = String::from("This is a Document Text, amazing Text in ourer Document. Can this Document be any better. This is Document.");
         let text_vector: Vec<&str> = text.split(' ').collect();
         for element in text_vector{

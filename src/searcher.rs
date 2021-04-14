@@ -1,5 +1,6 @@
 use::std::collections::HashMap;
-use::std::f64;
+
+
 
 pub fn search(table: &HashMap<String,HashMap<String, i32>>, query: &str) -> HashMap<String,f64>{
     println!("Searching...");
@@ -18,7 +19,10 @@ pub fn search(table: &HashMap<String,HashMap<String, i32>>, query: &str) -> Hash
             }
         }
         let sum: f64 = score_vec.iter().sum();
-        doc_and_score.insert(key.to_owned(), sum);
+        if sum != 0.0 {
+            doc_and_score.insert(key.to_owned(), sum);
+        }
+        
     }
     return doc_and_score;
 }

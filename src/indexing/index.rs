@@ -10,7 +10,9 @@ use::std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use postlist::Posting;
 use crate::indexing::postlist::sort_postlist;
+use uuid::Uuid;
 
+//Todo Anzahl der Dokumente sowie deren UUID speichern
 
 pub fn save_index(save_path: &str, index: HashMap<String, Vec<postlist::Posting>>){
     let mut buffer = flexbuffers::FlexbufferSerializer::new();
@@ -27,9 +29,23 @@ pub fn load_index(load_path: &str) -> HashMap<String, Vec<postlist::Posting>>{
     return HashMap::deserialize(read_buffer).unwrap();
 }
 
-pub fn create_index(documents_folder_path: &str){
-    let mut index: HashMap<String,Vec<Posting>> = HashMap::new();
+pub fn create_update_index(documents_folder_path: &str, optional_index_path: Option<Box<&str>>){
+    let mut index: HashMap<String,Vec<Posting>>;
 
+    match optional_index_path {
+        Some(index_path) => { index = load_index(&index_path); },
+        None => { index = HashMap::new(); },
+    }
+
+    let doc_list: Vec<String> = create_doc_list(documents_folder_path);
+
+    add_documents_too_index(doc_list, documents_folder_path, &mut index);
+
+    sort_postlist(&mut index);
+    save_index("data/index/indexlarge.txt",index);
+}
+
+pub fn create_doc_list(documents_folder_path: &str) -> Vec<String>{
     let mut doc_list: Vec<String> = Vec::new();
     if let Ok(entries) = fs::read_dir(documents_folder_path) {
         for entry in entries {
@@ -38,78 +54,28 @@ pub fn create_index(documents_folder_path: &str){
             }
         }
     }
+    return doc_list;
+}
 
-    for (i,doc) in doc_list.iter().enumerate() {
-        println!("{}",i);
+pub fn add_documents_too_index(doc_list: Vec<String>,documents_folder_path: &str, index: &mut HashMap<String,Vec<Posting>>){
+    let mut document_ids:HashMap<Uuid, bool> = HashMap::new();
+
+    for (i, doc) in doc_list.iter().enumerate() {
+        println!("Document {} of {}\nPercentage: {:.2}%",i, doc_list.len(), ((i as f64) / (doc_list.len() as f64))*100.0);
         let doc_text: String = fs::read_to_string(format!("{}{}", documents_folder_path, doc)).expect("Error while reading file").replace("\n", " ");
-        let postlist_for_doc = postlist::create_postings_for_document(&doc_text);
+
+        let document_id = Uuid::new_v5(&Uuid::NAMESPACE_OID,doc_text.as_bytes());
+
+        if document_ids.contains_key(&document_id){
+            println!("{}",document_id);
+            continue;
+        }
+        document_ids.insert(document_id,true);
+
+        let postlist_for_doc = postlist::create_postings_for_document(&doc_text, document_id, doc.to_owned());
 
         for (key, value) in postlist_for_doc{
-            if index.contains_key(&key){
-                let mut key_postlist = index.get(&key).unwrap().to_owned();
-                key_postlist.push(value);
-                //key_postlist.sort_by_key(|d| d.document_id);
-                index.insert(key, key_postlist);
-
-            }
-            else {
-                index.insert(key, vec![value]);
-            }
-        }
-    }
-    sort_postlist(&mut index);
-
-
-    save_index("data/index/indexlarge.txt",index);
-}
-
-/*
-2. Loop ueber alle Dokumente drueber
-    2.1 Falls Dokuement schon vorhanden (teste ueber UUID) skip
-        2.1.2 Eigene Date mit allen Doks ist glaube ich sinnvoll -> DB
-    2.2 Dokument nicht vorhanden -> Loop ueber jedes Wort
-        2.2.1 Lemmatisiere oder Stemme Wort etc. (Spaeter)
-        2.2.2 Schau ob Wort im Index ist
-            Ja: Erzeuge ein Posting und fuege es an der richtigen Stelle in der Postlist hinzu
-                Spaeter noch update Skippointer
-            Nein: Erzeuge ein Posting, Erstelle neue Postlist und fuege es dann hinzu
-pub fn create_index(path: &str) -> HashMap<String,HashMap<String, i32>>{
-    println!("Indexing...");
-    //let doc_iterator = fs::read_dir("/Users/meruem/Documents/Coding/Rust/indexing/data").unwrap();
-    let mut doc_list: Vec<String> = Vec::new();
-    if let Ok(entries) = fs::read_dir(path) {
-        for entry in entries {
-            if let Ok(entry) = &entry {
-                //let my_str: String = entry.file_name().into_string().unwrap();
-                doc_list.push(entry.file_name().into_string().unwrap());
-                //println!("{:?}", entry.file_name());
-            }
-        }
-    }
-    let mut table: HashMap<String,HashMap<String, i32>> = HashMap::new();
-    
-    for doc in doc_list{
-        let mut index: HashMap<String, i32> = HashMap::new();
-        let text: String = fs::read_to_string(format!("{}{}", path, doc)).expect("Error while reading file").replace("\n", " ");
-        //let text = String::from("This is a Document Text, amazing Text in ourer Document. Can this Document be any better. This is Document.");
-        let text_vector: Vec<&str> = text.split(' ').collect();
-        for element in text_vector{
-            let mut word = element.to_owned();
-            while word.ends_with('\n') || word.ends_with('\r') {
-                word.pop();
-            }
-            *index.entry(word).or_insert(0) += 1;
-        }
-        table.insert(doc, index);
-    }
-    return table;
-}
-
-pub fn print_index(table: &HashMap<String,HashMap<String, i32>>){
-    for (doc, index) in table {
-        for (key, value) in index{
-            println!("{}-{}: {}",doc, key, value);
+            index.entry(key).or_insert_with(Vec::new).push(value);
         }
     }
 }
- */

@@ -1,5 +1,12 @@
 use::std::collections::HashMap;
 
+/*
+1. Preprocess Query wie Index
+2. Waehle alle Postlisten aus dem Index fuer jeden Tokens aus der Query
+3. Merke alle Dokumente mit dem jeweiligen Gewicht
+4. Berechne den jeweiligen Score des Tokens
+ */
+
 
 
 pub fn search(table: &HashMap<String,HashMap<String, i32>>, query: &str) -> HashMap<String,f64>{
@@ -10,12 +17,8 @@ pub fn search(table: &HashMap<String,HashMap<String, i32>>, query: &str) -> Hash
         let mut score_vec: Vec<f64> = Vec::new();
         for word in &query_vector {
             if table.get(key).unwrap().contains_key(word.to_owned()){
-                //let _x = table.get(key).unwrap().get(word.to_owned()).unwrap();
-                
                 let word_score = calc_tf_idf(&word, &table.get(key).unwrap(), &table);
                 score_vec.push(word_score);
-
-                //println!("Doc: {} word: {} freq: {}  score: {}", key, word, x, word_score);
             }
         }
         let sum: f64 = score_vec.iter().sum();

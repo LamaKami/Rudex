@@ -1,17 +1,21 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use std::collections::HashMap;
-use crate::indexing::preprocess_text::tokenize_filter_special_characters;
+use crate::utils::preprocess_text::tokenize_filter_special_characters;
 
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Hash, Eq)]
 pub struct Posting{
     pub document_id: Uuid,
     pub document_name: String,
     pub weight: u32,
     pub positions: Vec<u32>,
-    pub list_length: u32,
     pub skip_pointer: Vec<Uuid>
+}
+impl PartialEq for Posting {
+    fn eq(&self, other: &Posting) -> bool {
+        self.document_id == other.document_id
+    }
 }
 
 impl Posting{
@@ -43,7 +47,6 @@ pub fn create_postings_for_document(document: &str, uuid: Uuid, document_name: S
                 document_name: document_name.clone(),
                 weight: 1,
                 positions: vec![i as u32],
-                list_length: 1,
                 skip_pointer: vec![]
             };
         }
